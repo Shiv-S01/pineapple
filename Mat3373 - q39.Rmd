@@ -1,7 +1,6 @@
 ---
-title: "MAT 3373 A3 Q39"
-author: "Shivani Singal"
-date: "25 November, 2023"
+title: "Sample ANN"
+date: "25 November, 2021"
 output: pdf_document
 ---
 
