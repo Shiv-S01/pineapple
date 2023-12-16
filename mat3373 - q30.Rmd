@@ -1,0 +1,111 @@
+---
+title: "MAT3373 - Q30"
+author: "Shivani Singal"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+data(Weekly)
+library(class)
+```
+
+## 1.
+
+```{r}
+plot(Weekly)
+summary(Weekly)
+```
+
+Year and Volume seem to share an interesting relationship. The numerical summary agrees with this finding.
+
+## 2.
+
+```{r}
+model <- glm(as.factor(Direction) ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume,
+data = Weekly, family = binomial)
+summary(model)
+```
+
+Lag 2 seems to be the only statistically significant predictor based on its small p-value.
+
+## 3.
+
+```{r}
+predict <- predict(model, type = "response")  #predict probabilities
+predict_direc <- ifelse(predict > 0.5, "Up", "Down") #class labels 0 or 1
+conf_matrix <- table(Actual = Weekly$Direction, Predicted = predict_direc)
+conf_matrix
+#overall fraction of correct predictions
+sum(diag(conf_matrix)) / sum(conf_matrix)
+```
+
+The model correctly predicted the direction of the stock market 56.10652% of the time. Out of the instances that were actually 'Up,' \(557 / (557 + 48) = 0.921\) or 92.1% were correctly predicted as 'Up.' Down weekly trends were predicted at a lower rate, \(54/(430+54)=0.1115\) or 11.15%. From these metrics, we see that logistic regression is not accurately predicting the days on which the predicted Direction is actually down.
+
+## 4.
+
+```{r}
+train_data <- subset(Weekly, Year <= 2008)
+model_train <- glm(Direction ~ Lag2, data = train_data, family = "binomial")
+
+test_data <- subset(Weekly, Year > 2008) #held-out data response values
+predictions_test <- predict(model_train, newdata = test_data, type = "response")
+
+predicted_direction_test <- ifelse(predictions_test > 0.5, "Up", "Down")
+
+conf_matrix_test <- table(Actual = test_data$Direction, Predicted = predicted_direction_test)
+conf_matrix_test
+accuracy_test <- sum(diag(conf_matrix_test)) / sum(conf_matrix_test)
+accuracy_test
+```
+
+The fraction of correct predictions is 62.5%. The model did well predicting Up (91.80%) than Down (20.93%), but it's an improvement from the previous model in predicting Down. 
+
+## 7.
+
+```{r}
+train_data <- subset(Weekly, Year <= 2008)
+test_data <- subset(Weekly, Year > 2008)
+
+knn_model <- knn(train = as.matrix(train_data$Lag2), 
+                 test = as.matrix(test_data$Lag2), 
+                 cl = train_data$Direction, 
+                 k = 1)
+
+conf_matrix_knn <- table(Actual = test_data$Direction, Predicted = knn_model)
+conf_matrix_knn
+accuracy_knn <- sum(diag(conf_matrix_knn)) / sum(conf_matrix_knn)
+accuracy_knn
+```
+
+The fraction of correct predictions is 50.96154%.
+
+
+## 8.
+
+```{r}
+#logistic regression with predictors Lag1, Lag2
+model_log <- glm(Direction ~ Lag1 + Lag2, data = train_data, family = "binomial")
+predict_log <- predict(model_log, newdata = test_data, type = "response")
+predict_direc_log <- ifelse(predict_log > 0.5, "Up", "Down")
+conf_matrix_log <- table(Actual=test_data$Direction, Predicted=predict_direc_log)
+conf_matrix_log
+accuracy_log <- sum(diag(conf_matrix_log)) / sum(conf_matrix_log)
+accuracy_log
+
+# kNN, k=3 with Lag2 predictor
+knn_model2 <- knn(train = as.matrix(train_data$Lag2), 
+                 test = as.matrix(test_data$Lag2), 
+                 cl = train_data$Direction, 
+                 k = 3)
+conf_mat_knn <- table(Actual = test_data$Direction, Predicted = knn_model2)
+conf_mat_knn
+acc_knn <- sum(diag(conf_matrix_knn)) / sum(conf_matrix_knn)
+acc_knn
+```
+
+Out of the tested models, the model from *part 4* seems to perform better.
+
+
+
