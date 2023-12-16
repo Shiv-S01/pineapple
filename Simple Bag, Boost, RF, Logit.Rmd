@@ -1,7 +1,6 @@
 ---
-title: "MAT3373-Q35"
-author: "Shivani Singal"
-date: "2023-11-22"
+title: "Bag, Boost, RF, Logit"
+date: "2021-11-10"
 output: pdf_document
 ---
 
