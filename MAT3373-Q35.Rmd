@@ -1,0 +1,92 @@
+---
+title: "MAT3373-Q35"
+author: "Shivani Singal"
+date: "2023-11-22"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(gbm)
+library(randomForest)
+library(caret)
+data(Weekly)
+```
+
+
+```{r}
+Weekly$Direction <- ifelse(Weekly$Direction == "Up", 1, 0)
+
+#Tr, Te sets
+set.seed(123)
+train_data <- Weekly[sample(nrow(Weekly), 0.7*nrow(Weekly)),]
+test_data <- Weekly[setdiff(1:nrow(Weekly), rownames(train_data)),]
+```
+
+
+```{r}
+#Boosting
+
+boost_model <- gbm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = train_data, distribution = "bernoulli", n.trees = 1000, interaction.depth = 3)
+
+boost_pred_probs <- predict(boost_model, newdata = test_data, n.trees = 1000, type = "response")
+boost_pred <- ifelse(boost_pred_probs > 0.5, 1, 0)
+
+accuracy_boost <- sum(boost_pred == test_data$Direction) / nrow(test_data)
+cat("Boosting Accuracy:", accuracy_boost, "\n")
+```
+
+```{r}
+train_data$Direction <- as.factor(train_data$Direction)
+test_data$Direction <- as.factor(test_data$Direction)
+levels(train_data$Direction)  #check levels
+
+#Bagging
+
+bag_model <- randomForest(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = train_data, ntree = 1000)
+bag_pred <- predict(bag_model, newdata = test_data)
+
+accuracy_bag <- sum(bag_pred == test_data$Direction, na.rm = TRUE) / nrow(test_data)
+cat("Bagging Accuracy:", accuracy_bag, "\n")
+```
+
+```{r}
+train_data$Direction <- as.factor(train_data$Direction)
+test_data$Direction <- as.factor(test_data$Direction)
+
+#Random forest model
+
+rf_model <- randomForest(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = train_data, ntree = 1000)
+rf_pred <- predict(rf_model, newdata = test_data, type="response")
+
+accuracy_rf <- sum(rf_pred == test_data$Direction) / nrow(test_data)
+cat("Random Forest Accuracy:", accuracy_rf, "\n")
+```
+
+```{r}
+train_data$Direction <- as.factor(train_data$Direction)
+test_data$Direction <- as.factor(test_data$Direction)
+
+#Logistic regression model
+
+logit_model <- glm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = train_data, family = binomial)
+logit_pred <- predict(logit_model, newdata = test_data, type = "response")
+logit_pred <- ifelse(logit_pred > 0.5, 1, 0)
+
+accuracy_logit <- sum(logit_pred == test_data$Direction) / nrow(test_data)
+cat("Logistic Regression Accuracy:", accuracy_logit, "\n")
+```
+
+```{r, warning=FALSE}
+#Linear regression
+
+fit_linear <- lm(Direction ~ Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data=train_data)
+linear_pred <- predict(fit_linear, newdata=test_data)
+linear_pred <- ifelse(linear_pred > 0.5, 1, 0)
+
+accuracy_linear <- sum(linear_pred == test_data$Direction)/nrow(test_data)
+cat("Linear Regression Accuracy:", accuracy_linear, "\n")
+```
+
+All of the models seem to perform about the same, producing very close accuracy results. The best performing model is the logistic regression model and the weakest model is the boosting model. The boosting model is more complex and the logistic regression model is simpler.
