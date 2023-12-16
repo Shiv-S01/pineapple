@@ -1,0 +1,54 @@
+---
+title: "MAT3373 - q40"
+author: "Shivani Singal"
+date: "2023-11-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ISLR)
+library(gbm)
+library(randomForest)
+library(caret)
+Wine <- read.csv("C:/Users/shiva/Downloads/wine.csv", header=TRUE)
+```
+
+```{r}
+Wine$Class <- as.factor(Wine$Class)
+#Tr, Te sets
+#set.seed(123)
+train_data <- Wine[sample(nrow(Wine), 0.7*nrow(Wine)),]
+test_data <- Wine[setdiff(1:nrow(Wine), rownames(train_data)),]
+
+levels(train_data$Class)  #check levels
+```
+
+## Bagging
+
+```{r}
+#Bagging
+bag_model <- randomForest(Class ~ ., data = train_data, ntree = 3)
+
+bag_pred <- predict(bag_model, newdata = test_data)
+table(bag_pred, test_data$Class)
+
+accuracy_bag <- sum(bag_pred == test_data$Class) / nrow(test_data)
+cat("Bagging Accuracy:", accuracy_bag, "\n")
+```
+
+## RF
+
+```{r}
+#Random forest model
+
+rf_model <- randomForest(Class ~ ., data = train_data, ntree = 1000, mtry = 4)
+
+rf_pred <- predict(rf_model, newdata = test_data)
+table(rf_pred, test_data$Class)
+
+accuracy_rf <- sum(rf_pred == test_data$Class) / nrow(test_data)
+cat("Random Forest Accuracy:", accuracy_rf, "\n")
+```
+
+The random forest model has a higher accuracy and seems to perform better than the bagging model.
