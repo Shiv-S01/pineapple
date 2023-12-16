@@ -1,7 +1,6 @@
 ---
-title: "MAT3373-Q38"
-author: "Shivani Singal"
-date: "2023-11-24"
+title: "Simple Naive Bayes & CART"
+date: "2021-10-10"
 output: pdf_document
 ---
 
@@ -10,10 +9,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library(e1071)
 library(ISLR)
 library(rpart)
-wine <- read.csv("C:/Users/shiva/Downloads/wine.csv", header=TRUE)
+wine <- read.csv("C:/Users/wine.csv", header=TRUE)
 ```
 
-## 3.
+## NB
 
 ```{r}
 train_data <- wine[sample(nrow(wine), 0.7 * nrow(wine)), ] #70-30 split
@@ -31,7 +30,7 @@ cat("Naïve Bayes Accuracy:", accuracy_nb, "\n")
 ```
 
 
-## 4.
+## CART
 
 ```{r}
 set.seed(123)
@@ -48,5 +47,5 @@ conf_matrix_cart <- table(cart_pred, test_data$Class)
 cat("CART Accuracy:", accuracy_pred, "\n")
 ```
 
-The naiyves bayes classifier model performed better than the CART, having a higher accuracy than CART.
+The Naive Bayes classifier model performed better than the CART, having a higher accuracy than CART.
 
