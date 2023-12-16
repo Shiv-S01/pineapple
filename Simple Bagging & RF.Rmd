@@ -10,7 +10,7 @@ library(ISLR)
 library(gbm)
 library(randomForest)
 library(caret)
-Wine <- read.csv("C:/Users/shiva/Downloads/wine.csv", header=TRUE)
+Wine <- read.csv("C:/Users/wine.csv", header=TRUE)
 ```
 
 ```{r}
