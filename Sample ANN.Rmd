@@ -13,7 +13,7 @@ library(neuralnet)
 
 
 ```{r, include=FALSE}
-wine <- read.csv("C:/Users/shiva/Downloads/wine.csv", header=TRUE)
+wine <- read.csv("C:/Users/wine.csv", header=TRUE)
 wine <- as.data.frame(wine)
 str(wine)
 table(wine$Class)
