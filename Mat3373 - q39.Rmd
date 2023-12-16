@@ -1,0 +1,342 @@
+---
+title: "MAT 3373 A3 Q39"
+author: "Shivani Singal"
+date: "25 November, 2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(ISLR)
+library(neuralnet)
+```
+
+
+```{r, include=FALSE}
+wine <- read.csv("C:/Users/shiva/Downloads/wine.csv", header=TRUE)
+wine <- as.data.frame(wine)
+str(wine)
+table(wine$Class)
+```
+
+```{r}
+n = nrow(wine)
+Y = wine$Class
+X = wine[,-1]
+C1.loc = which(Y==1)
+C2.loc = which(Y==2)
+C3.loc = which(Y==3)
+```
+
+```{r}
+plot.title = "Boxplot of Variables in the Wine dataset
+(original scale)"
+boxplot(X, main=plot.title, xaxt="n")
+axis(1,at=1:dim(X)[2],labels=colnames(X),las=2,cex.axis=0.5)
+```
+
+```{r}
+# Standardized predictor variables (full)
+X.std = scale(X)
+plot.title = "Boxplot of Variables in the Wine dataset
+(standardized)"
+boxplot(X.std, main=plot.title, xaxt="n")
+axis(1,at=1:dim(X)[2],labels=colnames(X),las=2,cex.axis=0.5)
+```
+
+```{r}
+plot.title = "Scatterplot matrix"
+pairs(X.std, main=plot.title, col=Y+1, cex=0.5, pch=".")
+```
+
+```{r}
+X.cor = cor(X.std)
+corrplot::corrplot.mixed(X.cor)
+```
+
+```{r}
+vif <- function(X){
+vif=rep(0,dim(X)[2])
+for (i in 1:dim(X)[2]){
+expl=X[,-c(i)]
+y=lm(X[,i]~expl)
+vif[i]=1/(1-summary(y)$r.squared)}
+return(vif)
+}
+vif.X = matrix(vif(X.std), nrow=1)
+colnames(vif.X) = colnames(X)
+rownames(vif.X) = "VIF"
+round(t(vif.X),2)
+```
+
+
+```{r}
+X = X[,-7]
+X.std = X.std[,-7]
+pca.std = prcomp(X.std)
+summary(pca.std)
+```
+
+```{r, fig.width=4, fig.height=3}
+scree.y = eigen(t(X.std)%*%X.std)$values/
+sum(eigen(t(X.std)%*%X.std)$values)
+barplot(scree.y, main=plot.title,ylim=c(0, 0.35),
+ylab="% explained", xlab="PC",col=heat.colors(12))
+test = seq(0.7, 13.9, length.out=12)
+axis(1, at=test, labels=1:12)
+```
+
+```{r, fig.width=4, fig.height=3}
+PC = X.std %*% pca.std$rotation
+PCnames = c("PC1","PC2","PC3","PC4","PC5","PC6","PC7",
+"PC8","PC9","PC10","PC11","PC12")
+colnames(PC) <- PCnames
+plot.title = "PC1 vs. PC2"
+plot(PC[,1], PC[,2], cex=1.2, main=plot.title, col=Y+1,
+xlab="PC1", ylab="PC2")
+```
+
+```{r, fig.width=5, fig.height=3.5}
+plot.title = "Boxplots (in Principal Coordinates)"
+par(mfrow = c(3, 4), mar = c(2, 2, 2, 2), oma = c(1, 1, 1, 1))
+for (i in 1:12){
+plot.title.ind = paste("PC ", i, sep="")
+boxplot(PC[,i]~Y, main=plot.title.ind,
+col=c("red","green","blue"))
+}
+```
+
+```{r}
+set.seed(1111) # for replicabilty
+C1.train.loc = sort(sample(C1.loc, size=46))
+C2.train.loc = sort(sample(C2.loc, size=56))
+C3.train.loc = sort(sample(C3.loc, size=38))
+train.loc = c(C1.train.loc, C2.train.loc, C3.train.loc)
+test.loc = which(!(1:length(Y) %in% train.loc))
+# training data
+PC.train = PC[train.loc,]
+Y.train = Y[train.loc]
+dat.train = as.data.frame(cbind(nnet::class.ind(Y.train),
+PC.train))
+colnames(dat.train)[1:3] = c("C1", "C2", "C3")
+# testing data
+PC.test = PC[test.loc,]
+Y.test = Y[test.loc]
+dat.test = as.data.frame(cbind(nnet::class.ind(Y.test),
+PC.test))
+colnames(dat.test)[1:3] = c("C1", "C2", "C3")
+```
+
+```{r, fig.width=4, fig.height=3, echo=FALSE}
+plot.title = "Training and Testing data"
+xlimit = c(-4,4)
+ylimit = c(-3,3)
+plot(dat.train$PC1, dat.train$PC2, cex=1.2, col=Y.train+1,
+main=plot.title, xlab="PC1", ylab="PC2", xlim=xlimit,
+ylim=ylimit)
+points(dat.test$PC1, dat.test$PC2, pch=17, cex=1.5,
+col=Y.test+1)
+```
+
+```{r}
+predict.region.PC1=seq(-5,5, length.out=100)
+predict.region.PC2=seq(-4,4, length.out=100)
+predict.region=expand.grid(x=predict.region.PC1,
+y=predict.region.PC2)
+```
+
+```{r}
+# A souped-up version of the confusion matrix
+confusion.expand <- function (pred.c, class) {
+temp <-mda::confusion(pred.c,class)
+row.sum <- apply(temp,1,sum)
+col.sum <- apply(temp,2,sum)
+t.sum <- sum(col.sum)
+tmp <- rbind(temp, rep("----", dim(temp)[2]), col.sum)
+tmp <- noquote(cbind(tmp, rep("|",dim(tmp)[1]),
+c(row.sum, "----", t.sum)))
+dimnames(tmp)<-list(object =
+c(dimnames(temp)[[1]],"-------","Col Sum"),
+true = c(dimnames(temp)[[2]],"|","Row Sum"))
+attr(tmp, "error") <- attr(temp, "error")
+attr(tmp, "mismatch") <- attr(temp, "mismatch")
+return(tmp)
+}
+```
+
+```{r}
+model.structure = c(10,10)
+model1 <- neuralnet::neuralnet(C1 + C2 + C3 ~ PC1 + PC2,
+data = dat.train, hidden = model.structure,
+err.fct = "ce", linear.output = FALSE)
+prob.model1.test <- neuralnet::compute(model1, PC.test[,1:2])
+predict.model1.test = max.col(prob.model1.test$net.result)
+print(paste("Confusion matrix (testing) for model = ",
+list(model.structure)[1], sep=""))
+(conf.test=confusion.expand(predict.model1.test, Y.test))
+```
+
+```{r, fig.width=5.5, fig.height=4, echo=FALSE}
+prob.model1.region <- neuralnet::compute(model1,
+predict.region[,1:2])
+predict.model1.region = max.col(prob.model1.region$net.result)
+plot.title=paste("Prediction region for ANN with structure = ",
+list(model.structure)[1], sep="")
+plot(predict.region[,1], predict.region[,2],
+main=plot.title, xlim=xlimit, ylim=ylimit,
+xlab="PC1", ylab="PC2",
+col=predict.model1.region+1, pch="+", cex=0.4)
+points(dat.train$PC1, dat.train$PC2, cex=1.2,
+col=Y.train+1)
+points(dat.test$PC1, dat.test$PC2, pch=17, cex=1.5,
+col=Y.test+1)
+```
+
+```{r}
+model.structure = c(10,10)
+n.j = 50
+conf.train.vector = conf.test.vector = NULL
+for (j in 1:n.j){
+model1 <- neuralnet::neuralnet(C1 + C2 + C3 ~ PC1 + PC2,
+data = dat.train, hidden = model.structure,
+err.fct = "ce", linear.output = FALSE)
+prob.model1.test <- neuralnet::compute(model1,
+PC.test[,1:2])
+predict.model1.test = max.col(prob.model1.test$net.result)
+conf.test = confusion.expand(predict.model1.test,
+Y.test)
+conf.test.vector=c(conf.test.vector,
+attributes(conf.test)$error)
+}
+# number of misclassifications
+conf.test.vector = round(conf.test.vector*length(Y.test))
+print(paste("Summary of number of misclassifications
+in testing data out of", n.j, "trials", sep=" "))
+round(summary(conf.test.vector), digits=2)
+```
+
+We build ANN for the PCA-reduced 6-input data set.
+
+```{r}
+model.structure = list(0, # no hidden layer
+2, 6, 10, 30, # 1 hidden layer
+rep(6,2), rep(10,2), rep(30,2), # 2 hidden layers
+rep(6,3), rep(10,3), rep(30,3)) # 3 hidden layers
+set.seed(1)
+results = NULL
+n.loop = length(model.structure)
+n.j = 25
+for (i in 1:n.loop){
+conf.train.vector = conf.test.vector = NULL
+for (j in 1:n.j){
+model1 <- neuralnet::neuralnet(C1 + C2 + C3 ~
+PC1 + PC2 + PC3 + PC4 + PC5 + PC6,
+data = dat.train, hidden = model.structure[[i]],
+err.fct = "ce", linear.output = FALSE)
+prob.model1.test <- neuralnet::compute(model1,
+PC.test[,1:6])
+predict.model1.test = max.col(prob.model1.test$net.result)
+conf.test=confusion.expand(predict.model1.test,
+Y.test)
+conf.test.vector=c(conf.test.vector,
+attributes(conf.test)$error)
+}
+results[[i]] = summary(round(conf.test.vector*length(Y.test)))
+}
+results = as.data.frame(dplyr::bind_rows(results,
+.id = "column_label"))
+colnames(results) <- c("hidden", "min", "Q1", "med", "mean",
+"Q3", "max")
+results$hidden <- model.structure
+```
+
+
+We can repeat this process once more, using all 12 PC.
+
+```{r}
+results_all_PCs = NULL
+for (i in 1:n.loop) {
+  conf.train.vector = conf.test.vector = NULL
+  for (j in 1:n.j) {
+    model1 <- neuralnet::neuralnet(C1 + C2 + C3 ~ .,
+                                   data = dat.train,
+                                   hidden = model.structure[[i]],
+                                   err.fct = "ce", linear.output = FALSE)
+    prob.model1.test <- neuralnet::compute(model1, PC.test[, 1:12])
+    predict.model1.test = max.col(prob.model1.test$net.result)
+    conf.test = confusion.expand(predict.model1.test, Y.test)
+    conf.test.vector = c(conf.test.vector, attributes(conf.test)$error)
+  }
+  results_all_PCs[[i]] = summary(round(conf.test.vector * length(Y.test)))
+}
+results_all_PCs = as.data.frame(dplyr::bind_rows(results_all_PCs,
+                                                 .id = "column_label"))
+colnames(results_all_PCs) <- c("hidden", "min", "Q1", "med", "mean", "Q3", "max")
+results_all_PCs$hidden <- model.structure
+accuracy_columns <- c("min", "Q1", "med", "mean", "Q3", "max")
+accuracy_results <- results_all_PCs[, c("hidden", accuracy_columns)]
+print(accuracy_results)
+```
+
+#####
+
+```{r}
+results_bigger_network = NULL
+n.j = 25
+elapsed_time = numeric(n.j)
+user_time = numeric(n.j)
+system_time = numeric(n.j)
+for (j in 1:n.j) {
+  start_time = proc.time()
+  model_bigger = neuralnet::neuralnet(C1 + C2 + C3 ~ .,
+                                      data = dat.train,
+                                      hidden = c(rep(30, 10)),
+                                      err.fct = "ce", linear.output = FALSE)
+  end_time = proc.time()
+  elapsed_time[j] = end_time[3] - start_time[3]
+  user_time[j] = end_time[1] - start_time[1]
+  system_time[j] = end_time[2] - start_time[2]
+  prob_model_bigger_test = neuralnet::compute(model_bigger, PC.test[, 1:12])
+  predict_model_bigger_test = max.col(prob_model_bigger_test$net.result)
+  conf_test_bigger = confusion.expand(predict_model_bigger_test, Y.test)
+  conf_test_vector_bigger = attributes(conf_test_bigger)$error
+  results_bigger_network = c(results_bigger_network, conf_test_vector_bigger)
+}
+
+summary_results_bigger_network = summary(round(results_bigger_network * length(Y.test)))
+print(summary_results_bigger_network)
+cat("Average Elapsed Time:", mean(elapsed_time), "seconds\n")
+cat("Average User Time:", mean(user_time), "seconds\n")
+cat("Average System Time:", mean(system_time), "seconds\n")
+```
+
+```{r}
+train_and_evaluate <- function(hidden_layers, nodes) {
+  start_time <- proc.time()
+  model <- neuralnet::neuralnet(C1 + C2 + C3 ~ .,
+                                data = dat.train,
+                                hidden = c(rep(nodes, hidden_layers)),
+                                err.fct = "ce",
+                                linear.output = FALSE)
+  end_time <- proc.time()
+  elapsed_time <- end_time["elapsed"] - start_time["elapsed"]
+  user_time <- end_time["user.self"] - start_time["user.self"]
+  system_time <- end_time["sys.self"] - start_time["sys.self"]
+  prob.test <- neuralnet::compute(model, PC.test[, 1:12])
+  predict.test <- max.col(prob.test$net.result)
+  conf.test <- confusion.expand(predict.test, Y.test)
+  return(list(conf.test, elapsed_time, user_time, system_time))
+}
+```
+
+```{r}
+original_hidden_layers <- 10
+original_nodes <- 6
+original_results <- replicate(25, train_and_evaluate(original_hidden_layers, original_nodes))
+bigger_hidden_layers <- 10
+bigger_nodes <- 30
+bigger_results <- replicate(25, train_and_evaluate(bigger_hidden_layers, bigger_nodes))
+time_difference <- mean(sapply(bigger_results[2,], function(x) as.numeric(x)))
+print(paste("Average time difference:", time_difference, "seconds"))
+```
