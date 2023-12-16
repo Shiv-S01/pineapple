@@ -1,7 +1,6 @@
 ---
-title: "MAT3373 - Q34"
-author: "Shivani Singal"
-date: "2023-11-21"
+title: "Majority vs Avg"
+date: "2021-10-10"
 output: pdf_document
 ---
 
