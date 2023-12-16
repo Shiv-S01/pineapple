@@ -1,7 +1,6 @@
 ---
-title: "MAT3373 - q40"
-author: "Shivani Singal"
-date: "2023-11-24"
+title: "Sample Bagging & RF"
+date: "2022-11-24"
 output: pdf_document
 ---
 
