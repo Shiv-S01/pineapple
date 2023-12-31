@@ -1,8 +1,3 @@
----
-title: "MAT3373 - Q30"
-author: "Shivani Singal"
-output: pdf_document
----
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
